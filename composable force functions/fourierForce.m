@@ -14,6 +14,7 @@ endPt = 1E2; % used to avoid problems at infinity with EM forces
 
 integrand = @(xi)(abs(B_s(xi)).^2.*Gamma(xi));
 im_force = w/(8*pi*mu0)*(integral(integrand,-endPt,endPt));
-f = [imag(im_force);real(im_force)];
+%negatives to have force on magnet rather than force on plate
+f = [-imag(im_force);-real(im_force)];
 
 end
