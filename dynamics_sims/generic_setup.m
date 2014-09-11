@@ -11,6 +11,10 @@ P = 1; %pole-pairs
 w = 0.01; % width of the magnet
 C = findC(Br,P,ur,r_o,r_i); %C property of a halbach array
 omega_max = 4500; %max motor speed in rad/sec
+%fourier transformed magnetic field
+B_array = @(xi,g)halbachSource(xi,C,P,r_o,g,0);
+
+% setup specific things
 %spin axes - each column is a unit vector pointing along axis
 a1 = [0;1;0];
 a2 = [0;-1;0];
@@ -25,6 +29,11 @@ d = [d1 d2];
 %EM properties - frequency, etc.
 %pointing axes - each column is a unit vector pointing along dipole
 %EM locations - each column is a vector from the com to the em
+%B_em = @(xi,g)emSource(...)
+
+%keep track of magnet types - electromagnet or permanent
+magType = ['p','p'];
+n = length(magType); %number of actuators
 
 %3) initialize the mass properties 
 %mass
@@ -53,11 +62,13 @@ rho = 2.83E-6; %ohm-m resistivity of the plate
 sigma = 1/rho; %conductivity of the plate
 n_hat = [0;0;1]; %surface normal at closest initial point
 kappa = 0; %curvature of the surface
-
+gamma_v = @(xi,v_t,v_n,w_e)findGamma2(xi,v_t,v_n,mu0,sigma,w_e,b);
 %6)initialize time or controllers
 t0 = 0;
 t_max = 10; 
 dt = 0.01;
+
+
 
 
 
