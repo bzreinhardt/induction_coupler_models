@@ -88,8 +88,44 @@ classdef InductionCoupler < hgsetget
             b = patch(b_n(1,:),b_n(2,:),[50/255, 50/255, 50/255, 50/255]);
             %draw the body's com
             %draw an arm to the coupler
+            %arm in body coordinates
+            arm_width = 0.1;
+            arm_theta = atan2(obj.pos(2),obj.pos(1));
+            arm_arm_coords = [0 0 norm(obj.pos(1:2)) norm(obj.pos(1:2));...
+                             -arm_width/2 arm_width/2 arm_width/2 -arm_width/2];
+            arm_b = [cos(arm_theta) -sin(arm_theta); ...
+                sin(arm_theta) cos(arm_theta)]*arm_arm_coords;
+            arm_n = b_A_n'*[arm_b;zeros(1,4)];
+            patch(arm_n(1,:),arm_n(2,:),[50/255, 50/255, 50/255, 50/255]);
             %draw a circle and rectange for the coupler itself
+            obj.draw2Dcoupler();
             hold off;
+        end
+        
+         %% DRAW A SINGLE COUPLER
+        
+        function draw2Dcoupler (obj,varargin)
+            %             if nargin > 1
+            %             for i = 1:(length(varargin)/2)
+            %                     if ~ischar(varargin{2*i-1})
+            %                         error('draw2Dcoupler:input', 'Property designations must be strings.')
+            %                     end
+            %                     switch lower(varargin{2*i-1})
+            %                         case {'time' 't'}
+            %                             if ~isnumeric(varargin{2*i})
+            %                                 error('BODY:body:input', 'Time must be a number.')
+            %                             else
+            %                                 bod.time = varargin{2*i};
+            %                             end
+            %                     end
+            %             end
+            %             end
+            
+            width = 0.25; height = 0.1; [midpt,~] = obj.getInertialCoords();
+            rectangle('Position',[midpt(1)-width/2,midpt(2)-height/2,width,height],...
+                'FaceColor','k');
+            drawCircle(height,midpt(1:2),'w');
+            
         end
         
         %% Get the Coupler Position in inertial coordinates
@@ -98,6 +134,7 @@ classdef InductionCoupler < hgsetget
             x_n = b_A_n'*obj.pos + obj.body.pos;
             a_n = b_A_n'*obj.axis;
         end
+
     end
     
     methods(Static)
@@ -122,6 +159,8 @@ classdef InductionCoupler < hgsetget
             f = [-imag(im_force);-real(im_force)];
 
         end
+        
+
     end
 end
 
