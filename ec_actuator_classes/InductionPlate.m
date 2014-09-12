@@ -6,14 +6,14 @@ classdef InductionPlate < hgsetget
     properties
         origin = [0;0;0]; %origin of the plate in inertial space
         att = [1 0 0 0]; %attitude of the plate in inertial space
-        w = 1; %width of the plate
-        l = 1; %length of the plate
+        w = 2; %width of the plate
+        l = 2; %length of the plate
         t = 0.01; %thickness of the plate
         sigma = 1/2.83E-6;
         rho = 2.83E-6;
         MU0 = 1.256E-6;
         kappa = 0;
-        gamma; %transmission function
+        gamma; %transmission function @(xi,v_t,v_n,w_e)
         
     end
     
@@ -25,7 +25,7 @@ classdef InductionPlate < hgsetget
         %% CONSTRUCTOR
         function obj = InductionPlate()
             %INDUCTIONPLATE creates a plate object
-            obj.gamma = @(xi, v_t,v_n, w_e)obj.findGamma(xi, v_t, v_n, MU0, sigma, w_e,b);
+            obj.gamma = @(xi, v_t,v_n, w_e)obj.findGamma(xi, v_t, v_n, obj.MU0, obj.sigma, w_e,obj.t);
         end
         
         %% FIND CLOSEST PLATE POINT TO POINT

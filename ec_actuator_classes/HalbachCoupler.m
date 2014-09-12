@@ -21,7 +21,7 @@ classdef HalbachCoupler < InductionCoupler
         function obj = HalbachCoupler()
             obj = obj@InductionCoupler();
             obj.C = obj.findC(obj.Br,obj.P,obj.ur,obj.r_o,obj.r_i);
-            obj.b_source = @(xi,g)obj.B_s(xi,obj.C,obj.P,obj.r_o,g,0);
+            obj.b_source = @(xi,g)obj.halbachSource(xi,obj.C,obj.P,obj.r_o,g,0);
         end
         
     end

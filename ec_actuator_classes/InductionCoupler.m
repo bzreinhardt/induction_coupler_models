@@ -22,18 +22,18 @@ classdef InductionCoupler < hgsetget
         function [f,tau] = genForce(obj)
             %GENFORCE solves for the force and toruqe on the rigid body 
             % in inertial coords
-            g = findgap();
-            [v_norm,v_tan] = findVelPlate();
-            b_A_n = quat2dcm(obj.bod.att);
+            g = obj.findGap();
+            [v_norm,v_tan] = obj.findVelPlate();
+            b_A_n = quat2dcm(obj.body.att);
             axis_n = b_A_n'*obj.axis;
             pos_n = b_A_n'*obj.pos;
             
             %TODO make the plate normal dynamic
             n = [0;0;1];
             f_p = fourierForce(@(xi)obj.b_source(xi,g), ...
-                @(xi)obj.plateGamma(xi,v_tan,v_norm,obj.w_e), obj.w);
+                @(xi)obj.plate.gamma(xi,v_tan,v_norm,obj.w_e), obj.w);
             dir_x = cross(axis_n,n);
-            dir_y = cross(dir_x,a);
+            dir_y = cross(dir_x,axis_n);
             f = f_p(1)*dir_x + f_p(2)*dir_y;
             
             tau = cross(f,pos_n);
@@ -63,6 +63,40 @@ classdef InductionCoupler < hgsetget
             v_n = obj.body.vel + cross(obj.body.om,obj.pos); %velocity of actuator in inertial space
             v_norm = dot(norm_plate,v_n);
             v_tan = norm(v_n - v_norm*norm_plate);
+        end
+        
+        %% Draw the system
+        function [b,p,c] = drawCoupledBot(obj,varargin)
+            %h = object handle
+            if nargin > 1
+                varargin{1} = f;
+                figure(f);
+            end
+            %draw a rectangle for the plate
+            width = obj.plate.w; length = obj.plate.l;
+            p = rectangle('Position',[-width/2,-length/2,width,length],'FaceColor',[204/255 204/255 204/255]);
+            hold on;
+            %draw a rectangle for the body
+  
+            b_x = obj.body.pos(1); b_y = obj.body.pos(2);
+            b_w = obj.body.sx; b_l = obj.body.sy;
+            b_X = [b_x-b_w/2 b_x-b_w/2 b_x+b_w/2 b_x+b_w/2];
+            b_Y = [b_y-b_l/2 b_y+b_l/2 b_y+b_l/2 b_y-b_l/2];
+            b_Z = zeros(size(b_Y));
+            b_A_n = quat2dcm(obj.body.att);
+            b_n = b_A_n'*[b_X;b_Y;b_Z];
+            b = patch(b_n(1,:),b_n(2,:),[50/255, 50/255, 50/255, 50/255]);
+            %draw the body's com
+            %draw an arm to the coupler
+            %draw a circle and rectange for the coupler itself
+            hold off;
+        end
+        
+        %% Get the Coupler Position in inertial coordinates
+        function [x_n, a_n] = getInertialCoords(obj)
+            b_A_n = quat2dcm(obj.body.att);
+            x_n = b_A_n'*obj.pos + obj.body.pos;
+            a_n = b_A_n'*obj.axis;
         end
     end
     
