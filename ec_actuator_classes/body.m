@@ -6,7 +6,7 @@ classdef body < hgsetget
         inertia = 2/5*eye(3);
 
         pos = [0 0 0]';
-        att = [0 0 0 1]';
+        att = [1 0 0 0];
         vel = [0 0 0]';
         om = [0 0 0]';
         time = 0;
@@ -100,7 +100,7 @@ classdef body < hgsetget
                 bod.pos = pos;
 
                 % Attitude
-                if all(size(att) == [1 4])
+                if all(size(att) == [4 1])
                     att = att';
                 elseif numel(att) ~= 4
                     error('BODY:body:input', 'Body quaternion must be a 4-element matrix.')
@@ -307,12 +307,12 @@ classdef body < hgsetget
                            '    (___)    ';
                            '    |  #|    ';
                            '    |  #|    ';
-                           '    `---´    '];
+                           '    `---ï¿½    '];
                 case 'sph'
                     pic = ['             ';
-                           '     ,-¸     ';
+                           '     ,-ï¿½     ';
                            '    (  *)    ';
-                           '     `-´     ';
+                           '     `-ï¿½     ';
                            '             '];
                 otherwise
                     pic = ['             ';
@@ -714,8 +714,9 @@ classdef body < hgsetget
             %% --Parse inputs
             if ~isnumeric(newAtt)
                 error('BODY:set:input', 'Body attitude must be numeric.')
-            elseif all(size(newAtt) == [1 4])
+            elseif all(size(newAtt) == [4 1])
                 newAtt = newAtt';
+                warning('making quaternion 4x1');
             elseif numel(newAtt) ~= 4
                 error('BODY:set:input', 'Body attitude must be a 4-element matrix.')
             end
