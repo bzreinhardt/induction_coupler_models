@@ -30,6 +30,13 @@ classdef InductionPlate < hgsetget
         
         %% FIND CLOSEST PLATE POINT TO POINT
         
+        %% DRAW THE PLATE
+        function p = draw(obj)
+            if obj.kappa == 0;
+                width = obj.w; length = obj.l;
+                p = rectangle('Position',[-width/2,-length/2,width,length],'FaceColor',[204/255 204/255 204/255]);
+            end
+        end
     end
     
     methods(Static)

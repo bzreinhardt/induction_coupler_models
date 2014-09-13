@@ -20,7 +20,7 @@ classdef InductionCoupler < hgsetget
         end
         %% GENERATE FORCE and TORQUE
         function [f,tau] = genForce(obj)
-            %GENFORCE solves for the force and toruqe on the rigid body 
+            %GENFORCE solves for the force and torque on the rigid body 
             % in inertial coords
             g = obj.findGap();
             [v_norm,v_tan] = obj.findVelPlate();
@@ -72,9 +72,21 @@ classdef InductionCoupler < hgsetget
                 varargin{1} = f;
                 figure(f);
             end
+             %draw an arm to the coupler
+             b_A_n = quat2dcm(obj.body.att);
+            %arm in body coordinates
+            arm_width = 0.1;
+            arm_theta = atan2(obj.pos(2),obj.pos(1));
+            arm_arm_coords = [0 0 norm(obj.pos(1:2)) norm(obj.pos(1:2));...
+                             -arm_width/2 arm_width/2 arm_width/2 -arm_width/2];
+            arm_b = [cos(arm_theta) -sin(arm_theta); ...
+                sin(arm_theta) cos(arm_theta)]*arm_arm_coords;
+            arm_n = b_A_n'*[arm_b;zeros(1,4)] + obj.body.pos*ones(1,4);
+            patch(arm_n(1,:),arm_n(2,:),[50/255, 50/255, 50/255, 50/255]);
+            %draw a circle and rectange for the coupler itself
+            obj.draw2Dcoupler();
             %draw a rectangle for the plate
-            width = obj.plate.w; length = obj.plate.l;
-            p = rectangle('Position',[-width/2,-length/2,width,length],'FaceColor',[204/255 204/255 204/255]);
+            
             hold on;
             %draw a rectangle for the body
   
@@ -83,22 +95,11 @@ classdef InductionCoupler < hgsetget
             b_X = [b_x-b_w/2 b_x-b_w/2 b_x+b_w/2 b_x+b_w/2];
             b_Y = [b_y-b_l/2 b_y+b_l/2 b_y+b_l/2 b_y-b_l/2];
             b_Z = zeros(size(b_Y));
-            b_A_n = quat2dcm(obj.body.att);
+            
             b_n = b_A_n'*[b_X;b_Y;b_Z];
             b = patch(b_n(1,:),b_n(2,:),[50/255, 50/255, 50/255, 50/255]);
             %draw the body's com
-            %draw an arm to the coupler
-            %arm in body coordinates
-            arm_width = 0.1;
-            arm_theta = atan2(obj.pos(2),obj.pos(1));
-            arm_arm_coords = [0 0 norm(obj.pos(1:2)) norm(obj.pos(1:2));...
-                             -arm_width/2 arm_width/2 arm_width/2 -arm_width/2];
-            arm_b = [cos(arm_theta) -sin(arm_theta); ...
-                sin(arm_theta) cos(arm_theta)]*arm_arm_coords;
-            arm_n = b_A_n'*[arm_b;zeros(1,4)];
-            patch(arm_n(1,:),arm_n(2,:),[50/255, 50/255, 50/255, 50/255]);
-            %draw a circle and rectange for the coupler itself
-            obj.draw2Dcoupler();
+           
             hold off;
         end
         
@@ -120,10 +121,19 @@ classdef InductionCoupler < hgsetget
             %                     end
             %             end
             %             end
-            
+             b_A_n = quat2dcm(obj.body.att);
             width = 0.25; height = 0.1; [midpt,~] = obj.getInertialCoords();
-            rectangle('Position',[midpt(1)-width/2,midpt(2)-height/2,width,height],...
-                'FaceColor','k');
+            arm_theta = atan2(obj.axis(2),obj.axis(1));
+            arm_arm_coords = [-height/2 -height/2 height/2 height/2;...
+                             -width/2 width/2 width/2 -width/2];
+            arm_b = [cos(arm_theta) -sin(arm_theta); ...
+                sin(arm_theta) cos(arm_theta)]*arm_arm_coords+obj.pos(1:2)...
+                *ones(1,4);
+            arm_n = b_A_n'*[arm_b;zeros(1,4)] + obj.body.pos*ones(1,4);
+            patch(arm_n(1,:),arm_n(2,:),'k');
+            
+      %      rectangle('Position',[midpt(1)-width/2,midpt(2)-height/2,width,height],...
+      %          'FaceColor','k');
             drawCircle(height,midpt(1:2),'w');
             
         end

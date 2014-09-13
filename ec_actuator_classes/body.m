@@ -1021,6 +1021,24 @@ classdef body < hgsetget
             mbod = mbod.solve(varargin{:});
         end
         
+%         %% UPDATE 
+%         function bod = update(bod,varargin)
+%             if mod(length(varargin),2) ~= 0
+%                 error('UPDATE: varargin requires even number of property pairs')
+%             end
+%             inputs = {};
+%             for i = length(varargin)
+%                 switch varargin{2*i-1}
+%                     case 't_his'
+%                         inputs 
+%                     case '
+%                 end
+%             end
+%             
+%                 
+%             
+%         end
+%         
     end %methods
 
 %     events
