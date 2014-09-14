@@ -11,6 +11,7 @@ classdef InductionCoupler < hgsetget
         body; %the coupled body
         plate; %the coupled plate 
         w = 0.01; % width of the magnet
+        gap;
     end
     
     methods
@@ -22,14 +23,15 @@ classdef InductionCoupler < hgsetget
         function [f,tau] = genForce(obj)
             %GENFORCE solves for the force and torque on the rigid body 
             % in inertial coords
-            g = obj.findGap();
-            [v_norm,v_tan] = obj.findVelPlate();
+            [g,n,pt] = obj.plate.nearestPt(obj.getInertialCoords());
+            obj.gap = g;
+            [v_norm,v_tan] = obj.findVelPlate(n);
             b_A_n = quat2dcm(obj.body.att);
             axis_n = b_A_n'*obj.axis;
             pos_n = b_A_n'*obj.pos;
             
             %TODO make the plate normal dynamic
-            n = [0;0;1];
+            
             f_p = fourierForce(@(xi)obj.b_source(xi,g), ...
                 @(xi)obj.plate.gamma(xi,v_tan,v_norm,obj.w_e), obj.w);
             dir_x = cross(axis_n,n);
@@ -56,10 +58,10 @@ classdef InductionCoupler < hgsetget
         end
         
         %% FIND THE VELOCITY OF THE COUPLER IN THE PLATE FRAME
-        function [v_norm,v_tan] = findVelPlate(obj)
+        function [v_norm,v_tan] = findVelPlate(obj,norm_plate)
             
             %for now assume static plate
-            norm_plate = [0;0;1];
+            
             v_n = obj.body.vel + cross(obj.body.om,obj.pos); %velocity of actuator in inertial space
             v_norm = dot(norm_plate,v_n);
             v_tan = norm(v_n - v_norm*norm_plate);
@@ -83,22 +85,27 @@ classdef InductionCoupler < hgsetget
                 sin(arm_theta) cos(arm_theta)]*arm_arm_coords;
             arm_n = b_A_n'*[arm_b;zeros(1,4)] + obj.body.pos*ones(1,4);
             patch(arm_n(1,:),arm_n(2,:),[50/255, 50/255, 50/255, 50/255]);
-            %draw a circle and rectange for the coupler itself
-            obj.draw2Dcoupler();
+            
             %draw a rectangle for the plate
             
             hold on;
             %draw a rectangle for the body
   
-            b_x = obj.body.pos(1); b_y = obj.body.pos(2);
             b_w = obj.body.sx; b_l = obj.body.sy;
-            b_X = [b_x-b_w/2 b_x-b_w/2 b_x+b_w/2 b_x+b_w/2];
-            b_Y = [b_y-b_l/2 b_y+b_l/2 b_y+b_l/2 b_y-b_l/2];
+            b_X = [-b_w/2 -b_w/2 b_w/2 b_w/2];
+            b_Y = [-b_l/2 b_l/2 b_l/2 -b_l/2];
             b_Z = zeros(size(b_Y));
             
-            b_n = b_A_n'*[b_X;b_Y;b_Z];
+            b_n = b_A_n'*[b_X;b_Y;b_Z] + obj.body.pos*ones(1,4);
             b = patch(b_n(1,:),b_n(2,:),[50/255, 50/255, 50/255, 50/255]);
             %draw the body's com
+            %draw a circle and rectange for the coupler itself
+            obj.draw2Dcoupler();
+            %draw a line from the plate to the coupler
+            obj_pt = obj.getInertialCoords();
+            [g,n,pt] = obj.plate.nearestPt(obj.getInertialCoords());
+            l = plot([pt(1),obj_pt(1)],[pt(2),obj_pt(2)]);
+            t = text(obj_pt(1)+0.1,obj_pt(2)+0.1,strcat('gap = ',num2str(g)));
            
             hold off;
         end

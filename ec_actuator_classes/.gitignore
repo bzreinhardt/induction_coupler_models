@@ -1,1 +1,6 @@
 *.m~
+body.m~ InductionCoupler.m~ InductionPlate.m~ tests.m~
+*.m~
+../dynamics_sims/*.m~
+../dynamics_sims/planar_sim_icra.m~
+*Test*

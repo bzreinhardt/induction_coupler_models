@@ -14,6 +14,9 @@ classdef InductionPlate < hgsetget
         MU0 = 1.256E-6;
         kappa = 0;
         gamma; %transmission function @(xi,v_t,v_n,w_e)
+        type;
+        mesh;
+        norm;
         
     end
     
@@ -23,9 +26,11 @@ classdef InductionPlate < hgsetget
     
     methods
         %% CONSTRUCTOR
-        function obj = InductionPlate()
+        function obj = InductionPlate(type,varargin)
             %INDUCTIONPLATE creates a plate object
             obj.gamma = @(xi, v_t,v_n, w_e)obj.findGamma(xi, v_t, v_n, obj.MU0, obj.sigma, w_e,obj.t);
+            obj.type = type;
+            obj.defineSurface();
         end
         
         %% FIND CLOSEST PLATE POINT TO POINT
@@ -37,6 +42,79 @@ classdef InductionPlate < hgsetget
                 p = rectangle('Position',[-width/2,-length/2,width,length],'FaceColor',[204/255 204/255 204/255]);
             end
         end
+        
+        %% DRAW PLATE IN 2D
+        function p = draw2D(obj)
+            switch obj.type
+                case 'flat'
+                    x_min = min(obj.mesh{1}(:));
+                    x_max = max(obj.mesh{1}(:));
+                    y_min = min(obj.mesh{2}(:));
+                    y_max = max(obj.mesh{2}(:));
+                    p = patch([x_min x_min x_max x_max],...
+                        [y_min y_max y_max y_min],[204/255 204/255 204/255]);
+                    
+                case 'curve'
+                    p = plot(obj.mesh{1}(1,:),obj.mesh{2}(1,:));
+                otherwise 
+                     error('Surface must be plate or curve for now');
+            end
+        end
+        
+        %% PLATE SURFACE POINTS
+        function defineSurface(obj)
+            %DEFINESURFCE finds a mesh of points that define the surface
+            %and the associated normals
+            switch obj.type
+                case 'flat'
+                    %for now only planar plates
+                    [X,Y] = meshgrid(linspace(obj.origin(1)-obj.w/2,obj.origin(1)+obj.w/2,200),...
+                        linspace(obj.origin(2)-obj.l/2,obj.origin(2)+obj.l/2,200));
+                    Z = obj.origin(3)*ones(size(X));
+                    [Nx,Ny,Nz] = surfnorm(X,Y,Z);
+                    obj.mesh = {X,Y,Z};
+                    obj.norm = {Nx,Ny,Nz};
+                case 'curve'
+                    if obj.kappa == 0
+                        obj.kappa = 1;
+                    end
+                    [X,Y,Z] = cylinder(1/obj.kappa*ones(1,4),300);
+                    X = X+obj.origin(1); Y = Y + obj.origin(2); Z = Z+obj.origin(3);
+                    [Nx,Ny,Nz] = surfnorm(X,Y,Z);
+                    obj.mesh = {X,Y,Z};
+                    obj.norm = {Nx,Ny,Nz};
+                otherwise
+                    error('Surface must be plate or curve for now');
+            end
+        end
+        %% FIND CLOSEST POINT ON THE SURFACE
+        function [g,norm,pt] = nearestPt(obj,pt)
+            dist = (obj.mesh{1}-pt(1)).^2 + (obj.mesh{2}-pt(2)).^2 + ...
+                (obj.mesh{3}-pt(3)).^2;
+            [g2,i] = min(dist(:));
+            g = sqrt(g2);
+            norm = [obj.norm{1}(i); obj.norm{2}(i); obj.norm{3}(i)];
+            pt = [obj.mesh{1}(i); obj.mesh{2}(i); obj.mesh{3}(i)];
+        end
+        
+        %% SET Kappa
+        function obj = set.kappa(obj,new_kappa)
+            obj.kappa = new_kappa;
+            obj.defineSurface();
+            
+        end
+        %% SET w
+        function obj = set.w(obj, new_w)
+            obj.w = new_w;
+            obj.defineSurface();
+        end
+         %% SET l
+        function obj = set.l(obj, new_l)
+            obj.l = new_l;
+            obj.defineSurface();
+        end
+        
+        
     end
     
     methods(Static)

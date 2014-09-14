@@ -3,7 +3,7 @@ clear all;
 t_max = 5;
 dt = 0.1;
 t = 0;
-x_body = [0;0;0.1];
+x_body = [-7.6;0;0];
 att_body = [1 0 0 0];
 
 t_his = t;
@@ -13,7 +13,7 @@ v_his = zeros(1,3);
 om_his = zeros(1,3);
 f_his = zeros(1,3);
 tau_his = zeros(1,3);
-u_his = zeros(1,2);
+
 %quaternion is cosine first. 
 % Angle is angle to go from inertial coordinates to body coordiantes coordinates
 %matlab quat2dcm takes a quaternion described above and finds the dcm
@@ -23,40 +23,59 @@ u_his = zeros(1,2);
 
 array1 = HalbachCoupler();
 array2 = HalbachCoupler();
+arrays = {array1, array2};
 
-array1.pos = [1;0;0];
-array2.pos = -array1.pos;
-array2.axis = -array1.axis;
-plate = InductionPlate('flat');
+u_his = zeros(size(arrays));
+
+
+plate = InductionPlate('curve');
+plate.kappa = 1/7;
+
+
 bod = body(x_body, att_body);
 bod.force = [0;0;0];
 bod.torque = [0;0;0];
+bod.sx = 0.5;bod.sy = 0.5; bod.sz= 0.5;
+
+array1.pos = [0.5;0.5;0];
+array1.axis = [0;0;1];
 set(array1,'body',bod);
 set(array1,'plate',plate);
+
+array2.pos = [0.5;-0.5;0];
+array2.axis = [0;0;1];
 set(array2,'body',bod);
 set(array2,'plate',plate);
-figure(1);clf; axis([-2 2 -2 2]);
+
+figure(1);clf; 
 p = plate.draw2D();
+axis([bod.pos(1)-1 bod.pos(1)+1 bod.pos(2)-1 bod.pos(2)+1]);
 set(p,'HandleVisibility','off');
-time_pos = [-1.2,-1.2];
-f_pos = [-0.5, -1.5];
-tau_pos = [0.8, -1.5];
+
+time_pos = [bod.pos(1)-1,bod.pos(2)-0.75];
+f_pos = [bod.pos(1)-0.75,bod.pos(2)-0.75];
+tau_pos = [bod.pos(1)-0.1,bod.pos(2)-0.75];
+
 h = text(time_pos(1),time_pos(2), strcat('time = ',num2str(t)));
 h2 = text(f_pos(1),f_pos(2),strcat('force = ',num2str(bod.force)));
 h3 = text(tau_pos(1),tau_pos(2),strcat('torque = ',num2str(bod.torque)));
-
 while t < t_max
     %update inputs
-    array1.w_e = 100;
+    array1.w_e = -100;
     array2.w_e = 100;
-    u = [array1.w_e;array2.w_e];
+    u = zeros(length(arrays),1);
+    for i = 1:length(arrays)
+        u(i) = arrays{i}.w_e;
+    end
     %test with just constant input, should go in straight line
     
     %find net force/torque
-    [f1 t1] = array1.genForce();
-    [f2 t2] = array2.genForce();
-    bod.force = f1 + f2;
-    bod.torque = t1 + t2;
+    [f1, t1] = array1.genForce();
+    [f2, t2] = array2.genForce();
+    
+    bod.force = f1+f2;
+    bod.torque = t1+t2;
+    
     %update state
     t = t + dt; %increment time
     A = quat2dcm(bod.att);
@@ -90,9 +109,10 @@ while t < t_max
     tau_his = [tau_his;bod.torque'];
     u_his = [u_his;u'];
      cla;
-    array1.drawCoupledBot();hold on;
-    array2.drawCoupledBot();
-   
+     for i = 1:length(arrays)
+         arrays{i}.drawCoupledBot();hold on;
+     end
+
 %     delete(h);
 %     delete(h2);
 %     delete(h3);
