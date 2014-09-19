@@ -1,9 +1,9 @@
 %open loop simulation of the system
 clear all;
-t_max = 5;
-dt = 0.1;
+t_max = 40;
+dt = 0.05;
 t = 0;
-x_body = [-7.6;0;0];
+x_body = [-7.55;0;0];
 att_body = [1 0 0 0];
 
 t_his = t;
@@ -26,7 +26,7 @@ array2 = HalbachCoupler();
 arrays = {array1, array2};
 
 u_his = zeros(size(arrays));
-
+gap_his = zeros(size(arrays));
 
 plate = InductionPlate('curve');
 plate.kappa = 1/7;
@@ -62,8 +62,13 @@ h2 = text(f_pos(1),f_pos(2),strcat('force = ',num2str(bod.force)));
 h3 = text(tau_pos(1),tau_pos(2),strcat('torque = ',num2str(bod.torque)));
 while t < t_max
     %update inputs
-    array1.w_e = 30;
-    array2.w_e = 30;
+    if t< 10
+        array1.w_e = 32.7;
+        array2.w_e = 32.7;
+    else
+        array1.w_e = -32.7;
+        array2.w_e = -32.7;
+    end
     u = zeros(length(arrays),1);
     for i = 1:length(arrays)
         u(i) = arrays{i}.w_e;
@@ -81,8 +86,6 @@ while t < t_max
     t = t + dt; %increment time
     A = quat2dcm(bod.att);
     bod.pos = bod.pos + bod.vel*dt;
-    f_his = [f_his;bod.force'];
-    tau_his = [tau_his;bod.torque'];
     bod.force = [bod.force(1:2);0]; %constrain to the plane
     bod.torque = [0;0;bod.torque(3)];
     
@@ -109,6 +112,7 @@ while t < t_max
     f_his = [f_his;bod.force'];
     tau_his = [tau_his;bod.torque'];
     u_his = [u_his;u'];
+     gap_his = [gap_his; array1.gap array2.gap];
      cla;
      for i = 1:length(arrays)
          arrays{i}.drawCoupledBot();hold on;
@@ -125,3 +129,23 @@ end
 figure(2);
 subplot(211); plot(x_his(:,1),x_his(:,2));
 subplot(212); plot(t_his, v_his); legend('v_x','v_y','v_z');
+
+f3 = figure(3); clf;
+subplot(211);
+
+[haxes,hline1,hline2] = plotyy([t_his t_his t_his],[f_his(:,1), f_his(:,2), tau_his(:,3)], t_his,u_his);
+set(hline1,'LineStyle','--','LineWidth',3); 
+xlabel('Time (s)');
+ylabel(haxes(1), 'Force and Torque (N/N*m)');
+set(haxes(1),'Xlim',[0 t_max]);
+set(haxes(2),'Xlim',[0 t_max]);
+
+ylabel(haxes(2), 'Array Speed (rad/s)');
+legend('Force_x', 'Force_y','Torque_z','Array Speed 1','Array Speed 2');
+
+f32 = subplot(212);
+h23 = plot(t_his,gap_his); xlabel('Time (s)'); ylabel('Gap from array to surface (m)'); 
+ylim([min(gap_his(2:end,1))-0.005, max(gap_his(2:end,1))+0.005]);
+xlim([0 t_max]);
+legend('Array 1','Array 2');
+print(f3, '-depsc','./figures/curve_rotations.eps');

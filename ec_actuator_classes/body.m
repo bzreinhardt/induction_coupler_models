@@ -5,7 +5,7 @@ classdef body < hgsetget
         %mass = 1;
         %inertia = 2/5*eye(3);
         mass = 26/2.56; %mass of ames test
-        inertia = 2/5*0.5^2*26/2.56*eye(3);
+        inertia = 2/5*0.5^2*26/2.56*eye(3); %sphereish
 
         pos = [0 0 0]';
         att = [1 0 0 0];

@@ -1,7 +1,7 @@
 %open loop simulation of the system
 clear all;
-t_max = 5;
-dt = 0.1;
+t_max = 10;
+dt = 0.05;
 t = 0;
 x_body = [0;0;0.01];
 att_body = [1 0 0 0];
@@ -61,8 +61,13 @@ h3 = text(tau_pos(1),tau_pos(2),strcat('torque = ',num2str(bod.torque)));
 
 while t < t_max
     %update inputs
-    array1.w_e = 30;
-    array2.w_e = 30;
+    if t < t_max/2
+        array1.w_e = 32.7;
+        array2.w_e = 32.7;
+    else
+        array1.w_e = -32.7;
+        array2.w_e = -32.7;
+    end
     u = zeros(length(arrays),1);
     for i = 1:length(arrays)
         u(i) = arrays{i}.w_e;
@@ -80,8 +85,7 @@ while t < t_max
     t = t + dt; %increment time
     A = quat2dcm(bod.att);
     bod.pos = bod.pos + bod.vel*dt;
-    f_his = [f_his;bod.force'];
-    tau_his = [tau_his;bod.torque'];
+    
     bod.force = [bod.force(1:2);0]; %constrain to the plane
     bod.torque = [0;0;bod.torque(3)];
     
@@ -121,7 +125,12 @@ while t < t_max
     h3 = text(tau_pos(1),tau_pos(2),strcat('torque = ',num2str(bod.torque)));
     drawnow;
 end
-figure(2);
-subplot(211); plot(x_his(:,1),x_his(:,2));
-subplot(212); plot(t_his, v_his); legend('v_x','v_y','v_z');
-xlabel('time(s)'); ylabel('velocity')
+f3 = figure(3); clf;
+
+[haxes,hline1,hline2] = plotyy([t_his t_his t_his],[f_his(:,1), f_his(:,2), tau_his(:,3)], t_his,u_his);
+set(hline1,'LineStyle','--','LineWidth',3); 
+xlabel('Time (sec)');
+ylabel(haxes(1), 'Force and Torque (N/N*m)');
+ylabel(haxes(2), 'Array Speed (rad/sec)');
+legend('Force_x', 'Force_y','Torque_z','Array Speed 1','Array Speed 2');
+print(f3, '-depsc','./figures/planar_rotations.eps');

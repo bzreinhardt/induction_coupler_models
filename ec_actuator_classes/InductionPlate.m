@@ -17,6 +17,7 @@ classdef InductionPlate < hgsetget
         type;
         mesh;
         norm;
+        mesh_pts = 700;
         
     end
     
@@ -68,8 +69,8 @@ classdef InductionPlate < hgsetget
             switch obj.type
                 case 'flat'
                     %for now only planar plates
-                    [X,Y] = meshgrid(linspace(obj.origin(1)-obj.w/2,obj.origin(1)+obj.w/2,200),...
-                        linspace(obj.origin(2)-obj.l/2,obj.origin(2)+obj.l/2,200));
+                    [X,Y] = meshgrid(linspace(obj.origin(1)-obj.w/2,obj.origin(1)+obj.w/2,obj.mesh_pts),...
+                        linspace(obj.origin(2)-obj.l/2,obj.origin(2)+obj.l/2,obj.mesh_pts));
                     Z = obj.origin(3)*ones(size(X));
                     [Nx,Ny,Nz] = surfnorm(X,Y,Z);
                     obj.mesh = {X,Y,Z};
@@ -78,7 +79,7 @@ classdef InductionPlate < hgsetget
                     if obj.kappa == 0
                         obj.kappa = 1;
                     end
-                    [X,Y,Z] = cylinder(1/obj.kappa*ones(1,4),300);
+                    [X,Y,Z] = cylinder(1/obj.kappa*ones(1,4),obj.mesh_pts);
                     X = X+obj.origin(1); Y = Y + obj.origin(2); Z = Z+obj.origin(3);
                     [Nx,Ny,Nz] = surfnorm(X,Y,Z);
                     obj.mesh = {X,Y,Z};
