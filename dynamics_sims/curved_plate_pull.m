@@ -128,14 +128,21 @@ while t < t_max
     h3 = text(tau_pos(1),tau_pos(2),strcat('torque = ',num2str(bod.torque)));
     drawnow;
 end
+
+paper_A_sim = [0 -1 0; 0 0 1; -1 0 0];
+f_his = (paper_A_sim * f_his')';
+tau_his = (paper_A_sim * tau_his')';
+
+
 figure(2);
 subplot(211); plot(x_his(:,1),x_his(:,2));
 subplot(212); plot(t_his, v_his); legend('v_x','v_y','v_z');
 
+
 f3 = figure(3); clf;
 subplot(211);
 
-[haxes,hline1,hline2] = plotyy([t_his t_his t_his],[f_his(:,1), f_his(:,2), tau_his(:,3)], t_his,u_his);
+[haxes,hline1,hline2] = plotyy([t_his t_his t_his],[f_his(:,3), f_his(:,1), tau_his(:,2)], t_his,u_his);
 set(hline1,'LineStyle','--','LineWidth',3); 
 xlabel('Time (s)');
 ylabel(haxes(1), 'Force and Torque (N/N*m)');
@@ -143,7 +150,7 @@ set(haxes(1),'Xlim',[0 100]);
 set(haxes(2),'Xlim',[0 100]);
 
 ylabel(haxes(2), 'Array Speed (rad/s)');
-legend('Force_x', 'Force_y','Torque_z','Array Speed 1','Array Speed 2');
+legend('Force_z', 'Force_x','Torque_y','Array Speed 1','Array Speed 2');
 
 f32 = subplot(212);
 h23 = plot(t_his,gap_his); xlabel('Time (s)'); ylabel('Gap from array to surface (m)'); 

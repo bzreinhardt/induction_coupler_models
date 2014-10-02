@@ -1,7 +1,8 @@
 %open loop simulation of the system
 clear all;
-t_max = 10;
-dt = 0.05;
+load('plate_body_system_with_arm.mat')
+load('overhead_with_arm.mat')
+
 t = 0;
 x_body = [0;0;0.01];
 att_body = [1 0 0 0];
@@ -20,9 +21,6 @@ tau_his = zeros(1,3);
 %to take a vector from inertial to body coordinates
 %run an initialization script
 
-
-array1 = HalbachCoupler();
-array2 = HalbachCoupler();
 arrays = {array1, array2};
 
 u_his = zeros(size(arrays));
@@ -30,21 +28,18 @@ u_his = zeros(size(arrays));
 
 plate = InductionPlate('flat');
 
-
-bod = body(x_body, att_body);
 bod.force = [0;0;0];
 bod.torque = [0;0;0];
-bod.sx = 0.5;bod.sy = 0.5; bod.sz= 0.5;
 
-array1.pos = [0.5;0.5;0];
-array1.axis = [0;1;0];
-set(array1,'body',bod);
+array1.pos = [X_m1;0];
+array2.pos = [X_m2;0];
+array1.axis = [array1.axis;0];
+array2.axis = [array2.axis;0];
 set(array1,'plate',plate);
-
-array2.pos = [0.5;-0.5;0];
-array2.axis = [0;-1;0];
-set(array2,'body',bod);
 set(array2,'plate',plate);
+
+dar = [0.13;0.05;0];
+ar_b = [-X_ar(1);X_ar(2);0] + dar;
 
 figure(1);clf; 
 p = plate.draw2D();
@@ -59,17 +54,16 @@ h = text(time_pos(1),time_pos(2), strcat('time = ',num2str(t)));
 h2 = text(f_pos(1),f_pos(2),strcat('force = ',num2str(bod.force)));
 h3 = text(tau_pos(1),tau_pos(2),strcat('torque = ',num2str(bod.torque)));
 
-j = 1;
-vid(t_max/dt) = struct('cdata',[],'colormap',[]);
-
+t_max = 10;
+dt = 0.05;
 while t < t_max
     %update inputs
-    if t < t_max/3
-        array1.w_e = 32.7;
-        array2.w_e = 32.7;
+    if t < t_max/2;
+    array1.w_e = 31.7; %303 rpm/60s/m*2*pi rad/r
+    array2.w_e = -31.7;
     else
-        array1.w_e = -32.7;
-        array2.w_e = -32.7;
+        array1.w_e = -31.7; %303 rpm/60s/m*2*pi rad/r
+        array2.w_e = 31.7;
     end
     u = zeros(length(arrays),1);
     for i = 1:length(arrays)
@@ -88,7 +82,6 @@ while t < t_max
     t = t + dt; %increment time
     A = quat2dcm(bod.att);
     bod.pos = bod.pos + bod.vel*dt;
-    
     bod.force = [bod.force(1:2);0]; %constrain to the plane
     bod.torque = [0;0;bod.torque(3)];
     
@@ -127,26 +120,13 @@ while t < t_max
     h2 = text(f_pos(1),f_pos(2),strcat('force = ',num2str(bod.force)));
     h3 = text(tau_pos(1),tau_pos(2),strcat('torque = ',num2str(bod.torque)));
     drawnow;
-     vid(j) = getframe;
-    j = j+1;
 end
-heading = 2*atan2(att_his(:,1),att_his(:,4));
+figure(2);
+ar_his = quatrotate(att_his,ones(size(att_his,1),1)*ar_b')+x_his;
+subplot(211); plot(ar_his(:,1),ar_his(:,2));
+subplot(212); plot(t_his, v_his); legend('v_x','v_y','v_z');
+xlabel('time(s)'); ylabel('velocity');
+figure(3); clf;
 
-f3 = figure(3); clf;
-subplot(211)
-[haxes,hline1,hline2] = plotyy([t_his],[tau_his(:,3)], t_his,u_his);
-set(hline1,'LineStyle','--','LineWidth',3); 
-set(haxes(1),'YColor','Black');
+[haxes,hline1,hline2] = plotyy([t_his t_his t_his],[f_his(:,1), f_his(:,2), tau_his(:,3)], t_his,u_his);
 
-ylabel(haxes(1), 'Force (N)', 'Color','black');
-
-ylabel(haxes(1), 'Torque (N*m)');
-ylabel(haxes(2), 'Array Speed (rad/sec)');
-legend('Torque_z','Array Speed 1','Array Speed 2');
-
-subplot(212);
-plot(t_his,heading);
-
-xlabel('Time (s)'); ylabel('Heading (rad)');
-%print(f3, '-depsc','./figures/planar_rotations.eps');
-%movie2avi(vid, './figures/planar_rotation_sim.avi','compression','none');

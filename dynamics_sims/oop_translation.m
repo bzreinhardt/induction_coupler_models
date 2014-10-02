@@ -1,9 +1,9 @@
 %open loop simulation of the system
 clear all;
-t_max = 10;
+t_max = 100;
 dt = 0.05;
 t = 0;
-x_body = [0;0;0.01];
+x_body = [-7.55;0;0];
 att_body = [1 0 0 0];
 
 t_his = t;
@@ -26,9 +26,11 @@ array2 = HalbachCoupler();
 arrays = {array1, array2};
 
 u_his = zeros(size(arrays));
+gap_his = zeros(size(arrays));
 
 
-plate = InductionPlate('flat');
+plate = InductionPlate('curve');
+plate.kappa = 1/7;
 
 
 bod = body(x_body, att_body);
@@ -37,40 +39,39 @@ bod.torque = [0;0;0];
 bod.sx = 0.5;bod.sy = 0.5; bod.sz= 0.5;
 
 array1.pos = [0.5;0.5;0];
-array1.axis = [0;1;0];
+array1.axis = [0;0;1];
 set(array1,'body',bod);
 set(array1,'plate',plate);
 
 array2.pos = [0.5;-0.5;0];
-array2.axis = [0;-1;0];
+array2.axis = [0;0;1];
 set(array2,'body',bod);
 set(array2,'plate',plate);
 
 figure(1);clf; 
 p = plate.draw2D();
-axis([bod.pos(1)-1.3 bod.pos(1)+1.3 bod.pos(2)-1.3 bod.pos(2)+1.3]);
+axis([bod.pos(1)-1 bod.pos(1)+1 bod.pos(2)-1 bod.pos(2)+1]);
 set(p,'HandleVisibility','off');
 
-time_pos = [bod.pos(1)-1.2,bod.pos(2)-0.75];
+time_pos = [bod.pos(1)-1,bod.pos(2)-0.75];
 f_pos = [bod.pos(1)-0.75,bod.pos(2)-0.75];
 tau_pos = [bod.pos(1)-0.1,bod.pos(2)-0.75];
 
 h = text(time_pos(1),time_pos(2), strcat('time = ',num2str(t)));
 h2 = text(f_pos(1),f_pos(2),strcat('force = ',num2str(bod.force)));
 h3 = text(tau_pos(1),tau_pos(2),strcat('torque = ',num2str(bod.torque)));
-
-j = 1;
 vid(t_max/dt) = struct('cdata',[],'colormap',[]);
-
+j = 1;
 while t < t_max
     %update inputs
-    if t < t_max/3
-        array1.w_e = 32.7;
+    if (array1.gap > 0.05 & array2.gap > 0.05)
+        array1.w_e = -32.7;
         array2.w_e = 32.7;
     else
-        array1.w_e = -32.7;
+        array1.w_e = 32.7;
         array2.w_e = -32.7;
     end
+    
     u = zeros(length(arrays),1);
     for i = 1:length(arrays)
         u(i) = arrays{i}.w_e;
@@ -115,6 +116,7 @@ while t < t_max
     f_his = [f_his;bod.force'];
     tau_his = [tau_his;bod.torque'];
     u_his = [u_his;u'];
+    gap_his = [gap_his; array1.gap array2.gap];
      cla;
      for i = 1:length(arrays)
          arrays{i}.drawCoupledBot();hold on;
@@ -127,26 +129,38 @@ while t < t_max
     h2 = text(f_pos(1),f_pos(2),strcat('force = ',num2str(bod.force)));
     h3 = text(tau_pos(1),tau_pos(2),strcat('torque = ',num2str(bod.torque)));
     drawnow;
-     vid(j) = getframe;
+    vid(j) = getframe;
     j = j+1;
 end
-heading = 2*atan2(att_his(:,1),att_his(:,4));
+
+paper_A_sim = [0 -1 0; 0 0 1; -1 0 0];
+f_his = (paper_A_sim * f_his')';
+tau_his = (paper_A_sim * tau_his')';
+
+
+figure(2);
+subplot(211); plot(x_his(:,1),x_his(:,2));
+subplot(212); plot(t_his, v_his); legend('v_x','v_y','v_z');
+
 
 f3 = figure(3); clf;
-subplot(211)
-[haxes,hline1,hline2] = plotyy([t_his],[tau_his(:,3)], t_his,u_his);
+subplot(211);
+
+[haxes,hline1,hline2] = plotyy([t_his t_his],[f_his(:,3), tau_his(:,2)], t_his,u_his);
 set(hline1,'LineStyle','--','LineWidth',3); 
-set(haxes(1),'YColor','Black');
+xlabel('Time (s)');
+ylabel(haxes(1), 'Force and Torque (N/N*m)');
+set(haxes(1),'Xlim',[0 100]);
+set(haxes(2),'Xlim',[0 100]);
 
-ylabel(haxes(1), 'Force (N)', 'Color','black');
-
-ylabel(haxes(1), 'Torque (N*m)');
-ylabel(haxes(2), 'Array Speed (rad/sec)');
-legend('Torque_z','Array Speed 1','Array Speed 2');
-
-subplot(212);
-plot(t_his,heading);
-
-xlabel('Time (s)'); ylabel('Heading (rad)');
-%print(f3, '-depsc','./figures/planar_rotations.eps');
-%movie2avi(vid, './figures/planar_rotation_sim.avi','compression','none');
+ylabel(haxes(2), 'Array Speed (rad/s)');
+legend('Force_z', 'Torque_y','Array Speed 1','Array Speed 2');
+set(hline1(1),'LineStyle',':');
+set(hline2(1),'LineStyle','-.');
+f32 = subplot(212);
+h23 = plot(t_his,gap_his); xlabel('Time (s)'); ylabel('Gap from array to surface (m)'); 
+ylim([min(gap_his(2:end,1))-0.005, max(gap_his(2:end,1))+0.005]);
+xlim([0 100]);
+%print(f3, '-depsc','./figures/curve_translations.eps');
+%movie2avi(vid, './figures/oop_translation_sim.avi','compression','none');
+ 

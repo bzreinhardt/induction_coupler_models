@@ -58,16 +58,18 @@ h = text(time_pos(1),time_pos(2), strcat('time = ',num2str(t)));
 h2 = text(f_pos(1),f_pos(2),strcat('force = ',num2str(bod.force)));
 h3 = text(tau_pos(1),tau_pos(2),strcat('torque = ',num2str(bod.torque)));
 
-t_max = 5;
+t_max = 8;
 dt = 0.1;
+j = 1;
+vid(t_max/dt) = struct('cdata',[],'colormap',[]);
 while t < t_max
     %update inputs
-    if t < t_max/2;
-        array1.w_e = 31.7; %303 rpm/60s/m*2*pi rad/r
-        array2.w_e = -31.7;
+    if t < t_max/3;
+        array1.w_e = 32.7; %303 rpm/60s/m*2*pi rad/r
+        array2.w_e = -32.7;
     else
-        array1.w_e = -31.7; %303 rpm/60s/m*2*pi rad/r
-        array2.w_e = 31.7;
+        array1.w_e = -32.7; %303 rpm/60s/m*2*pi rad/r
+        array2.w_e = 32.7;
     end
     u = zeros(length(arrays),1);
     for i = 1:length(arrays)
@@ -123,17 +125,23 @@ while t < t_max
     h = text(time_pos(1),time_pos(2), strcat('time = ',num2str(t)));
     h2 = text(f_pos(1),f_pos(2),strcat('force = ',num2str(bod.force)));
     h3 = text(tau_pos(1),tau_pos(2),strcat('torque = ',num2str(bod.torque)));
-    drawnow;
+    %drawnow;
+    vid(j) = getframe;
+    j = j+1;
 end
 
 f3 = figure(3); clf;
+subplot(211);
+[haxes,hline1,hline2] = plotyy([t_his],[f_his(:,1)], t_his,u_his);
+set(hline1,'LineStyle','--','LineWidth',3);
+set(haxes(1),'YColor','Black');
 
-[haxes,hline1,hline2] = plotyy([t_his t_his t_his],[f_his(:,1), f_his(:,2), tau_his(:,3)], t_his,u_his);
-set(hline1,'LineStyle','--','LineWidth',3); 
-xlabel('Time (sec)');
-ylabel(haxes(1), 'Force and Torque (N/N*m)');
+ylabel(haxes(1), 'Force (N)', 'Color','black');
 ylabel(haxes(2), 'Array Speed (rad/sec)');
-legend('Force_x', 'Force_y','Torque_z','Array Speed 1','Array Speed 2');
-print(f3, '-depsc','/figures/planar_translation.eps');
-
+legend('Force_x','Array Speed 1','Array Speed 2');
+subplot(212);
+plot([t_his],x_his(:,1));
+ylabel('Position (m)');xlabel('Time (s)');
+%print(f3, '-depsc','./figures/planar_translation.eps');
+%movie2avi(vid, './figures/planar_translation_sim.avi','compression','none');
 
